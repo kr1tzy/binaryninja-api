@@ -12,7 +12,7 @@ from binaryninja.platform import Platform
 from binaryninja.function import Function
 from binaryninja.enums import (StructureVariant, NamedTypeReferenceClass, MemberAccess,
 							   MemberScope, ReferenceType, VariableSourceType,
-							   SymbolBinding, SymbolType, TokenEscapingType)
+							   SymbolBinding, SymbolType, TokenEscapingType, TypeClass)
 from binaryninja.types import (QualifiedName, Type, TypeBuilder, EnumerationMember, FunctionParameter, OffsetWithConfidence, BoolWithConfidence, EnumerationBuilder, NamedTypeReferenceBuilder,
 	StructureBuilder, StructureMember, IntegerType, StructureType, Symbol, NameSpace, MutableTypeBuilder,
 	NamedTypeReferenceType)
@@ -559,6 +559,60 @@ class TypeParserTest(unittest.TestCase):
 		assert types.types['space struct'].members[2].name == 'third member'
 		assert len(types.types['space struct'].members[2].type.target.parameters) == 1
 		assert types.types['space struct'].members[2].type.target.parameters[0].name == 'argument name'
+
+	def test_parse_class(self):
+		valid = r'''
+		class foo;
+		class bar
+		{
+			foo* foo;
+		};
+		class baz
+		{
+			class
+			{
+				bar m_bar;
+			} bar;
+			struct
+			{
+				baz m_baz;
+			} baz;
+		};
+		'''
+		types = self.p.parse_types_from_source(valid)
+		assert types.types['foo'].type_class == TypeClass.StructureTypeClass
+		assert types.types['foo'].type == StructureVariant.ClassStructureType
+		assert types.types['bar'].type_class == TypeClass.StructureTypeClass
+		assert types.types['bar'].type == StructureVariant.ClassStructureType
+		assert types.types['baz'].type_class == TypeClass.StructureTypeClass
+		assert types.types['baz'].type == StructureVariant.ClassStructureType
+		assert types.types['baz'].members[0].type.type_class == TypeClass.StructureTypeClass
+		assert types.types['baz'].members[0].type.type == StructureVariant.ClassStructureType
+		assert types.types['baz'].members[1].type.type_class == TypeClass.StructureTypeClass
+		assert types.types['baz'].members[1].type.type == StructureVariant.StructStructureType
+
+	def test_class_vs_struct(self):
+		# Trying to use `class foo` as `struct foo`
+		invalid = [
+			r'''
+				class foo;
+				class bar
+				{
+					struct foo* foo;
+				};
+			''', r'''
+				struct foo;
+				struct bar
+				{
+					class foo* foo;
+				};
+			'''
+		]
+
+		for source in invalid:
+			with self.subTest():
+				with self.assertRaises(SyntaxError):
+					types = self.p.parse_types_from_source(source)
 
 
 class TestQualifiedName(unittest.TestCase):
