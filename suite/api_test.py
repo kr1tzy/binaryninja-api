@@ -614,6 +614,68 @@ class TypeParserTest(unittest.TestCase):
 				with self.assertRaises(SyntaxError):
 					types = self.p.parse_types_from_source(source)
 
+	def test_parse_empty(self):
+		valid = [
+			# Forward declarations
+			'struct foo;',
+			'class foo;',
+			'union foo;',
+			'enum foo;',
+			# Definition with no members
+			'struct foo {};',
+			'class foo {};',
+			'union foo {};',
+			'enum foo {};',
+			# Inner structure is empty
+			'struct foo { struct {} bar; class {} baz; union {} alpha; enum {} bravo; };',
+			'class foo { struct {} bar; class {} baz; union {} alpha; enum {} bravo; };',
+			'union foo { struct {} bar; class {} baz; union {} alpha; enum {} bravo; };',
+		]
+		for source in valid:
+			with self.subTest():
+				types = self.p.parse_types_from_source(source)
+
+	def test_parse_nested(self):
+		source = r'''
+		struct foo
+		{
+			enum : uint32_t
+			{
+				a = 1,
+				b = 2,
+				c = 3
+			} bar;
+			struct
+			{
+				uint32_t a;
+			} baz;
+			class
+			{
+				uint32_t a;
+			} alpha;
+			union
+			{
+				uint32_t a;
+				uint32_t b;
+			} bravo;
+		};
+		'''
+		types = self.p.parse_types_from_source(source)
+		assert types.types['foo'].members[0].type.type_class == TypeClass.EnumerationTypeClass
+		assert types.types['foo'].members[1].type.type_class == TypeClass.StructureTypeClass
+		assert types.types['foo'].members[1].type.type == StructureVariant.StructStructureType
+		assert types.types['foo'].members[2].type.type_class == TypeClass.StructureTypeClass
+		assert types.types['foo'].members[2].type.type == StructureVariant.ClassStructureType
+		assert types.types['foo'].members[3].type.type_class == TypeClass.StructureTypeClass
+		assert types.types['foo'].members[3].type.type == StructureVariant.UnionStructureType
+		assert types.types['foo'].members[0].type.members[0].name == 'a'
+		assert types.types['foo'].members[0].type.members[1].name == 'b'
+		assert types.types['foo'].members[0].type.members[2].name == 'c'
+		assert types.types['foo'].members[1].type.members[0].name == 'a'
+		assert types.types['foo'].members[2].type.members[0].name == 'a'
+		assert types.types['foo'].members[3].type.members[0].name == 'a'
+		assert types.types['foo'].members[3].type.members[1].name == 'b'
+
 
 class TestQualifiedName(unittest.TestCase):
 	def test_constructors_and_equality(self):
