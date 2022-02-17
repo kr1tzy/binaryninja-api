@@ -676,6 +676,31 @@ class TypeParserTest(unittest.TestCase):
 		assert types.types['foo'].members[3].type.members[0].name == 'a'
 		assert types.types['foo'].members[3].type.members[1].name == 'b'
 
+	def test_forward_declared(self):
+		# Via #2431 with a little extra sauce on LIST_ENTRY1
+		source = r'''
+			struct _LIST_ENTRY;
+			typedef struct _LIST_ENTRY LIST_ENTRY;
+			typedef LIST_ENTRY LIST_ENTRY1;
+			struct _LIST_ENTRY {
+				LIST_ENTRY * ForwardLink;
+				LIST_ENTRY * BackLink;
+			};
+			
+			struct Test {
+				long long Signature;
+				LIST_ENTRY1 Link;
+				int Action;
+				short DefaultId;
+			};
+		'''
+		types = self.p.parse_types_from_source(source)
+		assert types.types['_LIST_ENTRY'].width == 0x10
+		assert types.types['LIST_ENTRY'].width == 0x10
+		assert types.types['LIST_ENTRY1'].width == 0x10
+		assert types.types['Test'].width == 0x20
+		assert types.types['Test'].members[2].offset == 0x18
+
 
 class TestQualifiedName(unittest.TestCase):
 	def test_constructors_and_equality(self):
