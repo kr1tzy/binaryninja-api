@@ -103,6 +103,8 @@ static void ExecuteActionLocal(void* ctxt)
 
 void BinaryNinja::ExecuteOnMainThreadAndWait(const function<void()>& action)
 {
+	if (BNIsShutdownRequested())
+		throw std::runtime_error("Shutdown requested");
 	MainThreadActionContext ctxt;
 	ctxt.action = action;
 	ctxt.exception = exception_ptr();
