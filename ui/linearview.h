@@ -442,6 +442,10 @@ class BINARYNINJAUIAPI LinearView : public QAbstractScrollArea, public View, pub
 	void moveToEndOfView();
 	void selectNone();
 	void navigateToHighlightedToken();
+	uint64_t getFollowableAddressAtCurrentCursorPosition();
+	void splitToNewTabAndJumpFromCursorPosition();
+	void splitToNewWindowAndJumpFromCursorPosition();
+	void splitToNewPaneAndJumpFromCursorPosition();
 };
 
 class LinearViewType : public ViewType
