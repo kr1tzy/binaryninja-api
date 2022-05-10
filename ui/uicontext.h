@@ -295,16 +295,16 @@ class BINARYNINJAUIAPI UIContext
 	virtual void createTabForWidget(const QString& name, QWidget* widget) = 0;
 
 	/*!
-	 * Open a new window with the same file context and jump to a given location
+	 * Open a new window with the same file context and Navigate to a given location
 	 * @param location
 	 */
-	virtual void splitToNewWindowAndJumpToLocation(uint64_t location) = 0;
+	virtual void splitToNewWindowAndNavigateToLocation(uint64_t location) = 0;
 
 	/*!
-	 * Open a new tab with the same file context and jump to a given location
+	 * Open a new tab with the same file context and Navigate to a given location
 	 * @param location
 	 */
-	virtual void splitToNewTabAndJumpToLocation(uint64_t location) = 0;
+	virtual void splitToNewTabAndNavigateToLocation(uint64_t location) = 0;
 
 	/*!
 		Open a new pane in the active tab
