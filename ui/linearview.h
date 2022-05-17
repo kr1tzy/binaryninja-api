@@ -442,7 +442,6 @@ class BINARYNINJAUIAPI LinearView : public QAbstractScrollArea, public View, pub
 	void moveToEndOfView();
 	void selectNone();
 	void navigateToHighlightedToken();
-	std::optional<uint64_t> getFollowableAddressAtCurrentCursorPosition();
 	void splitToNewTabAndNavigateFromCursorPosition();
 	void splitToNewWindowAndNavigateFromCursorPosition();
 	void splitToNewPaneAndNavigateFromCursorPosition();
