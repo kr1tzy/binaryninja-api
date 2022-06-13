@@ -682,22 +682,26 @@ from binaryninja import *
 					break
 				if self.code is not None:
 					self.instance.input_ready_state = ScriptingProviderInputReadyState.NotReadyForInput
-					code = self.code
+					_code = self.code
 					self.code = None
 
 					PythonScriptingInstance._interpreter.value = self
 					try:
 						self.update_locals()
 
-						# If a single-line command ends in ?, show docs as well
-						if code[-2:] == b'?\n' and len(code.split(b'\n')) < 3:
-							escaped_code = repr(code[:-2])
-							self.interpreter.push(f'bninspect({escaped_code}, globals(), locals())\n')
-							# Strip ? from the evaluated input
-							code = code[:-2] + b'\n'
+						if isinstance(_code, (lambda: 0).__code__.__class__):
+							# there is not really a better way to check for this class.
+							self.interpreter.runcode(_code)
+						else:
+							# If a single-line command ends in ?, show docs as well
+							if _code[-2:] == b'?\n' and len(_code.split(b'\n')) < 3:
+								escaped_code = repr(_code[:-2])
+								self.interpreter.push(f'bninspect({escaped_code}, globals(), locals())\n')
+								# Strip ? from the evaluated input
+								_code = _code[:-2] + b'\n'
 
-						for line in code.split(b'\n'):
-							self.interpreter.push(line.decode("utf-8"))
+							for line in _code.split(b'\n'):
+								self.interpreter.push(line.decode("utf-8"))
 
 						if self.active_view is not None:
 							tryNavigate = True
@@ -835,7 +839,7 @@ from binaryninja import *
 			return ScriptingProviderExecuteResult.InvalidScriptInput  # TODO: maybe this isn't the best result to use?
 		try:
 			with open(filename, 'r') as fp:
-				file_contents = fp.read().encode("utf-8")
+				file_contents = fp.read()
 		except IOError:
 			# File was not readable or something went horribly wrong
 			return ScriptingProviderExecuteResult.InvalidScriptInput
@@ -843,7 +847,10 @@ from binaryninja import *
 		if len(file_contents) == 0:
 			return ScriptingProviderExecuteResult.SuccessfulScriptExecution
 
-		return self.perform_execute_script_input(file_contents)
+		_code = code.compile_command(file_contents, filename, 'exec')
+		self.interpreter.execute(_code)
+
+		return ScriptingProviderExecuteResult.SuccessfulScriptExecution
 
 	@abc.abstractmethod
 	def perform_cancel_script_input(self):
