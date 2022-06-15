@@ -177,6 +177,7 @@ class BINARYNINJAUIAPI ScriptingConsole : public GlobalAreaWidget, BinaryNinja::
 	QString getProviderName() const { return m_providerName; }
 	QString getInstanceName() const { return m_instanceName; }
 	ScriptingInstanceRef getInstance() { return m_instance; }
+	BNScriptingProviderInputReadyState getCurrentState() { return m_currentState; }
 
 	void clearConsole();
 	void hideConsole();
