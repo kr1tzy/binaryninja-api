@@ -222,9 +222,9 @@ Ref<DebugInfo> DebugInfoParser::Parse(Ref<BinaryView> view, Ref<DebugInfo> exist
 }
 
 
-bool DebugInfoParser::IsExternal() const
+bool DebugInfoParser::IsExternal(const Ref<BinaryView> view) const
 {
-	return BNIsDebugInfoParserExternal(m_object);
+	return BNIsDebugInfoParserExternal(m_object, view->GetObject());
 }
 
 
@@ -238,10 +238,10 @@ bool DebugInfoParser::IsValidForView(const Ref<BinaryView> view) const
 // Plugin registration APIs //
 //////////////////////////////
 
-bool CustomDebugInfoParser::IsExternalCallback(void* ctxt)
+bool CustomDebugInfoParser::IsExternalCallback(void* ctxt, BNBinaryView* view)
 {
 	CustomDebugInfoParser* parser = (CustomDebugInfoParser*)ctxt;
-	return parser->IsExternal();
+	return parser->IsExternal(new BinaryView(view));
 }
 
 

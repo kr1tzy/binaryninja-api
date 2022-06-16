@@ -95,6 +95,16 @@ class _DebugInfoParserMetaClass(type):
 		return result
 
 	@staticmethod
+	def _is_external(view: core.BNBinaryView, callback: Callable[['binaryview.BinaryView'], bool]) -> bool:
+		try:
+			file_metadata = filemetadata.FileMetadata(handle=core.BNGetFileForView(view))
+			view_obj = binaryview.BinaryView(file_metadata=file_metadata, handle=core.BNNewViewReference(view))
+			return callback(view_obj)
+		except:
+			log_error(traceback.format_exc())
+			return False
+
+	@staticmethod
 	def _is_valid(view: core.BNBinaryView, callback: Callable[['binaryview.BinaryView'], bool]) -> bool:
 		try:
 			file_metadata = filemetadata.FileMetadata(handle=core.BNGetFileForView(view))
@@ -121,7 +131,8 @@ class _DebugInfoParserMetaClass(type):
 	@classmethod
 	def register(
 	    cls, name: str, is_valid: Callable[['binaryview.BinaryView'], bool],
-	    parse_info: Callable[["DebugInfo", 'binaryview.BinaryView'], None]
+	    parse_info: Callable[["DebugInfo", 'binaryview.BinaryView'], None],
+		is_external: Callable[['binaryView.BinaryView'], bool] = None
 	) -> "DebugInfoParser":
 		"""Registers a DebugInfoParser. See ``debuginfo.DebugInfoParser`` for more details."""
 		binaryninja._init_plugins()
@@ -129,14 +140,19 @@ class _DebugInfoParserMetaClass(type):
 		is_valid_cb = ctypes.CFUNCTYPE(ctypes.c_bool, ctypes.c_void_p,
 		                               ctypes.POINTER(core.BNBinaryView
 		                                              ))(lambda ctxt, view: cls._is_valid(view, is_valid))
+		if not is_external:
+			is_external = lambda *_: False
+		is_external_cb = ctypes.CFUNCTYPE(ctypes.c_bool, ctypes.c_void_p,
+		                               ctypes.POINTER(core.BNBinaryView
+		                                              ))(lambda ctxt, view: cls._is_external(view, is_external))
 		parse_info_cb = ctypes.CFUNCTYPE(
 		    None, ctypes.c_void_p, ctypes.POINTER(core.BNDebugInfo), ctypes.POINTER(core.BNBinaryView)
 		)(lambda ctxt, debug_info, view: cls._parse_info(debug_info, view, parse_info))
 
 		# Don't let our callbacks get garbage collected
 		global _debug_info_parsers
-		_debug_info_parsers[len(_debug_info_parsers)] = (is_valid_cb, parse_info_cb)
-		parser = core.BNRegisterDebugInfoParser(name, is_valid_cb, parse_info_cb, None)
+		_debug_info_parsers[len(_debug_info_parsers)] = (is_valid_cb, is_external_cb, parse_info_cb)
+		parser = core.BNRegisterDebugInfoParser(name, is_external_cb, is_valid_cb, parse_info_cb, None)
 		assert parser is not None, "core.BNRegisterDebugInfoParser is not None"
 		parser_ref = core.BNNewDebugInfoParserReference(parser)
 		assert parser_ref is not None, "core.BNNewDebugInfoParserReference returned None"
@@ -154,8 +170,9 @@ class DebugInfoParser(object, metaclass=_DebugInfoParserMetaClass):
 	A DebugInfoParser consists of:
 
 	1. A name
-	2. An ``is_valid`` function which takes a BV and returns a bool
+	2. An ``is_valid`` function which takes a :py:class:`BinaryView` and returns a bool
 	3. A ``parse`` function which takes a :py:class:`DebugInfo` object and uses the member functions :py:meth:`DebugInfo.add_type`, :py:meth:`DebugInfo.add_function`, and :py:meth:`DebugInfo.add_data_variable` to populate all the info it can.
+	3. An ``is_external`` function which takes a :py:class:`BinaryView` and returns a bool if the debug information requires an external file
 
 	And finally calling :py:meth:`DebugInfoParser.register` to register it with the core.
 
@@ -166,13 +183,16 @@ class DebugInfoParser(object, metaclass=_DebugInfoParserMetaClass):
 		def is_valid(bv: bn.binaryview.BinaryView) -> bool:
 			return bv.view_type == "Raw"
 
+		def is_external(bv: bn.binaryview.BinaryView) -> bool:
+			return False # All our fake debug information is internal
+
 		def parse_info(debug_info: bn.debuginfo.DebugInfo, bv: bn.binaryview.BinaryView) -> None:
 			debug_info.add_type("name", bn.types.Type.int(4, True))
 			debug_info.add_data_variable(0x1234, bn.types.Type.int(4, True), "name")
 			function_info = bn.debuginfo.DebugFunctionInfo(0xdead1337, "short_name", "full_name", "raw_name", bn.types.Type.int(4, False), [])
 			debug_info.add_function(function_info)
 
-		bn.debuginfo.DebugInfoParser.register("debug info parser", is_valid, parse_info)
+		bn.debuginfo.DebugInfoParser.register("debug info parser", is_valid, parse_info, is_external)
 
 	:py:class:`DebugInfo` can then be automatically applied to valid binary views (via the "Parse and Apply Debug Info" setting), or manually fetched/applied as bellow::
 

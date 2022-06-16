@@ -6956,13 +6956,13 @@ namespace BinaryNinja {
 		std::string GetName() const;
 		Ref<DebugInfo> Parse(Ref<BinaryView> view, Ref<DebugInfo> existingDebugInfo = nullptr) const;
 
-		bool IsExternal() const;
+		bool IsExternal(const Ref<BinaryView> view) const;
 		bool IsValidForView(const Ref<BinaryView> view) const;
 	};
 
 	class CustomDebugInfoParser : public DebugInfoParser
 	{
-		static bool IsExternalCallback(void* ctxt);
+		static bool IsExternalCallback(void* ctxt, BNBinaryView* view);
 		static bool IsValidCallback(void* ctxt, BNBinaryView* view);
 		static void ParseCallback(void* ctxt, BNDebugInfo* debugInfo, BNBinaryView* view);
 		BNDebugInfoParser* Register(const std::string& name);
@@ -6971,7 +6971,7 @@ namespace BinaryNinja {
 		CustomDebugInfoParser(const std::string& name);
 		virtual ~CustomDebugInfoParser() {}
 
-		virtual bool IsExternal() = 0;
+		virtual bool IsExternal(Ref<BinaryView>) = 0;
 		virtual bool IsValid(Ref<BinaryView>) = 0;
 		virtual void ParseInfo(Ref<DebugInfo>, Ref<BinaryView>) = 0;
 	};

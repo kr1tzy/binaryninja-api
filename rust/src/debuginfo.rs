@@ -131,8 +131,8 @@ impl DebugInfoParser {
         unsafe { BNIsDebugInfoParserValidForView(self.handle, view.handle) }
     }
 
-    pub fn is_external(&self) -> bool {
-        unsafe { BNIsDebugInfoParserExternal(self.handle) }
+    pub fn is_external(&self, view: &BinaryView) -> bool {
+        unsafe { BNIsDebugInfoParserExternal(self.handle, view.handle) }
     }
 
     /// Returns a `DebugInfo` object populated with debug info by this debug-info parser. Only provide a `DebugInfo` object if you wish to append to the existing debug info
@@ -161,14 +161,15 @@ impl DebugInfoParser {
         S: BnStrCompatible,
         C: CustomDebugInfoParser,
     {
-        extern "C" fn cb_is_external<C>(ctxt: *mut c_void) -> bool
+        extern "C" fn cb_is_external<C>(ctxt: *mut c_void, view: *mut BNBinaryView) -> bool
         where
             C: CustomDebugInfoParser,
         {
             ffi_wrap!("CustomDebugInfoParser::is_external", unsafe {
                 let cmd = &*(ctxt as *const C);
+                let view = BinaryView::from_raw(view);
 
-                cmd.is_external()
+                cmd.is_external(&view)
             })
         }
 
@@ -659,7 +660,7 @@ impl ToOwned for DebugInfo {
 
 /// Implement this trait to implement a debug info parser.  See `DebugInfoParser` for more details.
 pub trait CustomDebugInfoParser: 'static + Sync {
-    fn is_external(&self) -> bool;
+    fn is_external(&self, view: &BinaryView) -> bool;
     fn is_valid(&self, view: &BinaryView) -> bool;
     fn parse_info(&self, debug_info: &mut DebugInfo, view: &BinaryView);
 }
