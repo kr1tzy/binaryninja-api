@@ -647,8 +647,8 @@ from binaryninja import *
 			with open(startup_file, 'r') as f:
 				self.interpreter.runsource(f.read(), filename="startup.py", symbol="exec")
 
-		def execute(self, code):
-			self.code = code
+		def execute(self, _code):
+			self.code = _code
 			self.event.set()
 
 		def add_input(self, data):
@@ -690,8 +690,10 @@ from binaryninja import *
 						self.update_locals()
 
 						if isinstance(_code, (lambda: 0).__code__.__class__):
-							# there is not really a better way to check for this class.
 							self.interpreter.runcode(_code)
+							self.locals['__name__'] = '__console__'
+							del self.locals['__file__']
+
 						else:
 							# If a single-line command ends in ?, show docs as well
 							if _code[-2:] == b'?\n' and len(_code.split(b'\n')) < 3:
@@ -835,6 +837,8 @@ from binaryninja import *
 
 	@abc.abstractmethod
 	def perform_execute_script_input_from_filename(self, filename):
+		if isinstance(filename, bytes):
+			filename = filename.decode("utf-8")
 		if not os.path.exists(filename) and os.path.isfile(filename):
 			return ScriptingProviderExecuteResult.InvalidScriptInput  # TODO: maybe this isn't the best result to use?
 		try:
@@ -848,6 +852,8 @@ from binaryninja import *
 			return ScriptingProviderExecuteResult.SuccessfulScriptExecution
 
 		_code = code.compile_command(file_contents, filename, 'exec')
+		self.interpreter.locals['__file__'] = filename
+		self.interpreter.locals['__name__'] = '__main__'
 		self.interpreter.execute(_code)
 
 		return ScriptingProviderExecuteResult.SuccessfulScriptExecution
