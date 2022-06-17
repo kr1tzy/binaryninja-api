@@ -151,8 +151,6 @@ class BINARYNINJAUIAPI ScriptingConsole : public GlobalAreaWidget, BinaryNinja::
 	std::vector<ScriptOutput> m_pendingOutput;
 	QTimer* m_updateTimer;
 
-	std::function<void()> m_onScriptCompletion;
-
 	BNScriptingProviderInputReadyState m_currentState;
 
 	QStringList m_history;
@@ -169,6 +167,8 @@ class BINARYNINJAUIAPI ScriptingConsole : public GlobalAreaWidget, BinaryNinja::
 
   Q_SIGNALS:
 	void viewChanged(QWidget* frame);
+	void onScriptExecution();
+	void onScriptCompletion();
 
   protected:
 	void customEvent(QEvent* event) override;
@@ -182,7 +182,6 @@ class BINARYNINJAUIAPI ScriptingConsole : public GlobalAreaWidget, BinaryNinja::
 	QString getInstanceName() const { return m_instanceName; }
 	ScriptingInstanceRef getInstance() { return m_instance; }
 	bool getScriptIsActive() const { return m_scriptActive; }
-	void setOnScriptCompletion(const std::function<void()>& completionFunction);
 
 	void clearConsole();
 	void hideConsole();
