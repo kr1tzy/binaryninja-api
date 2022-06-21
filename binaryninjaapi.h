@@ -7051,4 +7051,35 @@ namespace BinaryNinja {
 		virtual bool StoreData(const std::string& key, const std::string& data) override;
 		virtual bool DeleteData(const std::string& key) override;
 	};
+
+	class Component : public CoreRefCountObject<BNComponent, BNNewComponentReference, BNFreeComponent>
+	{
+	public:
+
+		static Ref<Component> Create();
+
+		Component(BNComponent* type);
+		std::string GetGUID();
+
+		std::string GetName();
+		void SetName(const std::string &name);
+
+		void AddFunction(Ref<Function> func);
+		void AddComponent(Ref<Component> component);
+		void RemoveFunction(Ref<Function> func);
+		void RemoveComponent(Ref<Component> component);
+
+		std::vector<Ref<Type>> GetReferencedTypes();
+		std::vector<Ref<Component>> GetContainedComponents();
+		std::vector<Ref<Function>> GetContainedFunctions();
+		std::vector<DataVariable> GetReferencedDataVariables();
+	};
+
+	class ComponentManager
+	{
+	public:
+		static Ref<Component> GetComponentByGUID(const std::string& guid);
+
+	};
+
 }  // namespace BinaryNinja

@@ -220,6 +220,7 @@ extern "C"
 	struct BNRepository;
 	struct BNRepoPlugin;
 	struct BNRepositoryManager;
+	struct BNComponent;
 	struct BNSettings;
 	struct BNMetadata;
 	struct BNReportCollection;
@@ -5885,6 +5886,37 @@ extern "C"
 	BINARYNINJACOREAPI BNRepositoryManager* BNGetRepositoryManager();
 
 	BINARYNINJACOREAPI BNRepository* BNRepositoryManagerGetDefaultRepository(BNRepositoryManager* r);
+
+	// Components
+
+	BINARYNINJACOREAPI BNComponent* BNComponentCreateEmpty(void);
+	BINARYNINJACOREAPI BNComponent* BNNewComponentReference(BNComponent *component);
+	BINARYNINJACOREAPI bool BNComponentContainsFunction(BNComponent* component, BNFunction *function);
+	BINARYNINJACOREAPI bool BNComponentContainsComponent(BNComponent *parent, BNComponent *component);
+	BINARYNINJACOREAPI void BNFreeComponent(BNComponent *component);
+	BINARYNINJACOREAPI void BNComponentAddFunctionReference(BNComponent* component, BNFunction* function, bool addReferences);
+	BINARYNINJACOREAPI void BNComponentAddComponentReference(BNComponent *component, BNComponent *referenceComponent);
+	BINARYNINJACOREAPI void BNComponentAddAllMembersFromComponent(BNComponent *component, BNComponent *fromComponent);
+	BINARYNINJACOREAPI void BNComponentRemoveFunctionReference(BNComponent *component, BNFunction *function, bool removeReferences);
+	BINARYNINJACOREAPI void BNComponentRemoveComponentReference(BNComponent *component, BNComponent *referenceComponent);
+	BINARYNINJACOREAPI void BNComponentRemoveAllFunctions(BNComponent *component);
+	BINARYNINJACOREAPI void BNComponentRemoveAllComponents(BNComponent *component);
+	BINARYNINJACOREAPI void BNComponentRemoveAllMembers(BNComponent *component);
+	BINARYNINJACOREAPI BNFunction** BNComponentGetContainedFunctions(BNComponent *component, size_t *count);
+	BINARYNINJACOREAPI void BNComponentFreeContainedFunctionList(BNFunction** functions, size_t count);
+	BINARYNINJACOREAPI BNComponent** BNComponentGetContainedComponents(BNComponent *component, size_t *count);
+	BINARYNINJACOREAPI void BNComponentFreeContainedComponentList(BNComponent** components, size_t count);
+	BINARYNINJACOREAPI BNDataVariable* BNComponentGetReferencedDataVariables(BNComponent *component, size_t *count);
+	BINARYNINJACOREAPI BNDataVariable* BNComponentGetReferencedDataVariablesRecursive(BNComponent *component, size_t *count);
+	BINARYNINJACOREAPI void BNComponentFreeReferencedDataVariableList(BNDataVariable* dataVariables, size_t count);
+	BINARYNINJACOREAPI BNType** BNComponentGetReferencedTypes(BNComponent *component, size_t *count);
+	BINARYNINJACOREAPI BNType** BNComponentGetReferencedTypesRecursive(BNComponent *component, size_t *count);
+	BINARYNINJACOREAPI void BNComponentFreeReferencedTypesList(BNType **types, size_t count);
+	BINARYNINJACOREAPI char *BNComponentGetGUID(BNComponent *component);
+	BINARYNINJACOREAPI BNComponent* BNGetComponentByGUID(const char *guid);
+	BINARYNINJACOREAPI char *BNComponentGetName(BNComponent* component);
+	BINARYNINJACOREAPI void BNComponentSetName(BNComponent* component, const char* name);
+
 
 	// LLVM Services APIs
 	BINARYNINJACOREAPI void BNLlvmServicesInit(void);
