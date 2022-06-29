@@ -13,6 +13,7 @@
 // limitations under the License.
 
 use std::borrow::Borrow;
+use std::fmt::{Debug, Display, Formatter};
 use std::marker::PhantomData;
 use std::mem;
 use std::ops::{Deref, DerefMut};
@@ -94,6 +95,18 @@ impl<T: RefCountable> Drop for Ref<T> {
 impl<T: RefCountable> Clone for Ref<T> {
     fn clone(&self) -> Self {
         unsafe { RefCountable::inc_ref(&self.contents) }
+    }
+}
+
+impl<T: RefCountable + Display> Display for Ref<T> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        self.contents.fmt(f)
+    }
+}
+
+impl<T: RefCountable + Debug> Debug for Ref<T> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        self.contents.fmt(f)
     }
 }
 

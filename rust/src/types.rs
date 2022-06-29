@@ -17,6 +17,7 @@
 // TODO : Test the get_enumeration and get_structure methods
 
 use binaryninjacore_sys::*;
+use std::iter::IntoIterator;
 use std::{fmt, mem, ptr, result, slice};
 
 use crate::architecture::{Architecture, CoreArchitecture};
@@ -630,7 +631,8 @@ impl Type {
     pub fn parameters(&self) -> Result<Vec<FunctionParameter<BnString>>> {
         unsafe {
             let mut count: usize = mem::zeroed();
-            let parameters_raw: *mut BNFunctionParameter = BNGetTypeParameters(self.handle, &mut count);
+            let parameters_raw: *mut BNFunctionParameter =
+                BNGetTypeParameters(self.handle, &mut count);
             if parameters_raw.is_null() {
                 Err(())
             } else {
@@ -717,6 +719,15 @@ impl Type {
 
     pub fn char() -> Ref<Self> {
         Self::int(1, true)
+    }
+
+    pub fn wide_char(width: usize) -> Ref<Self> {
+        unsafe {
+            Self::ref_from_raw(BNCreateWideCharType(
+                width,
+                BnString::new("").as_ptr() as *mut _,
+            ))
+        }
     }
 
     pub fn int(width: usize, is_signed: bool) -> Ref<Self> {
@@ -1024,6 +1035,18 @@ impl From<&TypeBuilder> for Ref<Type> {
 }
 
 impl fmt::Display for Type {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", unsafe {
+            BnString::from_raw(BNGetTypeString(
+                self.handle,
+                ptr::null_mut(),
+                BNTokenEscapingType::NoTokenEscapingType,
+            ))
+        })
+    }
+}
+
+impl fmt::Debug for Type {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", unsafe {
             BnString::from_raw(BNGetTypeString(
@@ -1613,6 +1636,26 @@ impl<S: BnStrCompatible> From<S> for QualifiedName {
             name: unsafe { BNAllocStringList(list.as_mut_ptr(), 1) },
             join: join.into_raw(),
             nameCount: 1,
+        })
+    }
+}
+
+impl<S: BnStrCompatible> From<Vec<S>> for QualifiedName {
+    fn from(names: Vec<S>) -> Self {
+        let join = BnString::new("::");
+        let names = names
+            .into_iter()
+            .map(|n| n.as_bytes_with_nul())
+            .collect::<Vec<_>>();
+        let mut list = names
+            .iter()
+            .map(|n| n.as_ref().as_ptr() as *const _)
+            .collect::<Vec<_>>();
+
+        QualifiedName(BNQualifiedName {
+            name: unsafe { BNAllocStringList(list.as_mut_ptr(), list.len()) },
+            join: join.into_raw(),
+            nameCount: list.len(),
         })
     }
 }
